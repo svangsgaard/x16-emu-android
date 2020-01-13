@@ -1,4 +1,4 @@
-# Install script for directory: /Users/sv/Downloads/sdl2-android-example-master/SDL2
+# Install script for directory: /Users/sv/git/x16-emu-android/SDL2
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

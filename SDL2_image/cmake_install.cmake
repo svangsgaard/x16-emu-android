@@ -1,4 +1,4 @@
-# Install script for directory: /Users/sv/Downloads/sdl2-android-example-master/SDL2_image
+# Install script for directory: /Users/sv/git/x16-emu-android/SDL2_image
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,8 +39,8 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/Users/sv/Downloads/sdl2-android-example-master/SDL2_png/cmake_install.cmake")
-  include("/Users/sv/Downloads/sdl2-android-example-master/SDL2_jpeg/cmake_install.cmake")
+  include("/Users/sv/git/x16-emu-android/SDL2_png/cmake_install.cmake")
+  include("/Users/sv/git/x16-emu-android/SDL2_jpeg/cmake_install.cmake")
 
 endif()
 
