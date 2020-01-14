@@ -69,10 +69,12 @@ model {
             cppFlags.addAll([
                     "-I" + file("../SDL2/include/").absolutePath,
                     "-I" + file("../SDL2_image/include/").absolutePath,
+                    "-ffastmath -Ofast -DWITH_YM2151",
             ])
             CFlags.addAll([
                     "-I" + file("../SDL2/include/").absolutePath,
                     "-I" + file("../SDL2_image/include/").absolutePath,
+                    "-ffastmath -Ofast -DWITH_YM2151",
             ])
             stl "stlport_static"
         }

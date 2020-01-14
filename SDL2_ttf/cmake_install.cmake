@@ -1,4 +1,4 @@
-# Install script for directory: /Users/sv/git/x16-emu-android/SDL2_ttf
+# Install script for directory: /Users/mpe18/Documents/code/x16-emu-android/SDL2_ttf
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/Users/sv/git/x16-emu-android/freetype/cmake_install.cmake")
+  include("/Users/mpe18/Documents/code/x16-emu-android/freetype/cmake_install.cmake")
 
 endif()
 

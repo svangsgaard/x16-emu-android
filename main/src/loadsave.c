@@ -10,6 +10,12 @@
 #include <unistd.h>
 #include "glue.h"
 #include "memory.h"
+#include "video.h"
+#include "rom_symbols.h"
+
+#if __APPLE__
+#include <TargetConditionals.h>
+#endif
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -49,7 +55,17 @@ create_directory_listing(uint8_t *data)
 	*data++ = 'C';
 	*data++ = 0;
 
-	if (!(dirp = opendir("."))) {
+	#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+	char filename[255];
+	//use correct file location for ios
+	strcpy(filename,getenv("HOME"));
+	//concatenating the path string returned from HOME
+	strcat(filename,"/Documents/.");
+	#else
+	const char *filename = ".";
+	#endif
+
+	if (!(dirp = opendir(filename))) {
 		return 0;
 	}
 	while ((dp = readdir(dirp))) {
@@ -115,8 +131,8 @@ void
 LOAD()
 {
 	char filename[41];
-	uint8_t len = MIN(RAM[0xb7], sizeof(filename) - 1);
-	memcpy(filename, (char *)&RAM[RAM[0xbb] | RAM[0xbc] << 8], len);
+	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
+	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
 
 	uint16_t override_start = (x | (y << 8));
@@ -127,34 +143,68 @@ LOAD()
 		x = end & 0xff;
 		y = end >> 8;
 		status &= 0xfe;
-		RAM[0x90] = 0;
+		RAM[STATUS] = 0;
 		a = 0;
 	} else {
-		FILE *f = fopen(filename, "rb");
+		#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+		//use correct file location for ios
+		char full_filename[255];
+		//concatenating the path string returned from HOME
+		strcpy(full_filename, getenv("HOME"));
+		strcat(full_filename, "/Documents/");
+		strcat(full_filename, filename);
+		#else
+		char *full_filename = filename;
+		#endif
+
+		FILE *f = fopen(full_filename, "rb");
+
 		if (!f) {
 			a = 4; // FNF
-			RAM[0x90] = a;
+			RAM[STATUS] = a;
 			status |= 1;
 			return;
 		}
 		uint8_t start_lo = fgetc(f);
 		uint8_t start_hi = fgetc(f);
 		uint16_t start;
-		if (!RAM[0xb9]) {
+		if (!RAM[SA]) {
 			start = override_start;
 		} else {
 			start = start_hi << 8 | start_lo;
 		}
 
 		size_t bytes_read = 0;
-		if(start < 0x9f00) {
+		if(a > 1) {
+			// Video RAM
+			video_write(0, start & 0xff);
+			video_write(1, start >> 8);
+			video_write(2, ((a - 2) & 0xf) | 0x10);
+			uint8_t buf[2048];
+			while(1) {
+				size_t n = fread(buf, 1, sizeof buf, f);
+				if(n == 0) break;
+				for(size_t i = 0; i < n; i++) {
+					video_write(3, buf[i]);
+				}
+				bytes_read += n;
+			}
+		} else if(start < 0x9f00) {
 			// Fixed RAM
 			bytes_read = fread(RAM + start, 1, 0x9f00 - start, f);
 		} else if(start < 0xa000) {
 			// IO addresses
-		} else if(start < 0xc000) { 
+		} else if(start < 0xc000) {
 			// banked RAM
-			bytes_read = fread(RAM + ((uint16_t)memory_get_ram_bank() << 13) + start, 1, 0xc000 - start, f);
+			while(1) {
+				size_t len = 0xc000 - start;
+				bytes_read = fread(RAM + ((uint16_t)memory_get_ram_bank() << 13) + start, 1, len, f);
+				if(bytes_read < len) break;
+
+				// Wrap into the next bank
+				start = 0xa000;
+				memory_set_ram_bank(1 + memory_get_ram_bank());
+			}
 		} else {
 			// ROM
 		}
@@ -165,7 +215,7 @@ LOAD()
 		x = end & 0xff;
 		y = end >> 8;
 		status &= 0xfe;
-		RAM[0x90] = 0;
+		RAM[STATUS] = 0;
 		a = 0;
 	}
 }
@@ -174,8 +224,8 @@ void
 SAVE()
 {
 	char filename[41];
-	uint8_t len = MIN(RAM[0xb7], sizeof(filename) - 1);
-	memcpy(filename, (char *)&RAM[RAM[0xbb] | RAM[0xbc] << 8], len);
+	uint8_t len = MIN(RAM[FNLEN], sizeof(filename) - 1);
+	memcpy(filename, (char *)&RAM[RAM[FNADR] | RAM[FNADR + 1] << 8], len);
 	filename[len] = 0;
 
 	uint16_t start = RAM[a] | RAM[a + 1] << 8;
@@ -185,11 +235,23 @@ SAVE()
 		a = 0;
 		return;
 	}
+	//use correct file location for ios
+	#if __APPLE__ && (TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE)
+	//use correct file location for ios
+	char full_filename[255];
+	//concatenating the path string returned from HOME
+	strcpy(full_filename, getenv("HOME"));
+	strcat(full_filename, "/Documents/");
+	strcat(full_filename, filename);
+	#else
+	char *full_filename = filename;
+	#endif
 
-	FILE *f = fopen(filename, "wb");
+	FILE *f = fopen(full_filename, "wb");
+
 	if (!f) {
 		a = 4; // FNF
-		RAM[0x90] = a;
+		RAM[STATUS] = a;
 		status |= 1;
 		return;
 	}
@@ -201,7 +263,7 @@ SAVE()
 	fclose(f);
 
 	status &= 0xfe;
-	RAM[0x90] = 0;
+	RAM[STATUS] = 0;
 	a = 0;
 }
 

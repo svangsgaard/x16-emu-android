@@ -1,4 +1,4 @@
-# Install script for directory: /Users/sv/git/x16-emu-android/SDL2_gfx
+# Install script for directory: /Users/mpe18/Documents/code/x16-emu-android/SDL2_gfx
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

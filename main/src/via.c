@@ -11,7 +11,7 @@
 #include "memory.h"
 //XXX
 #include "glue.h"
-
+#include "joystick.h"
 
 //
 // VIA#1
@@ -31,17 +31,29 @@ void
 via1_init()
 {
 	srand(time(NULL));
+
+	// default banks are 0
+	memory_set_ram_bank(0);
+	memory_set_rom_bank(0);
 }
 
 uint8_t
 via1_read(uint8_t reg)
 {
-	if (reg == 4 || reg == 5 || reg == 8 || reg == 9) {
-		// timer A and B: return random numbers for RND(0)
-		// XXX TODO: these should be real timers :)
-		return rand() & 0xff;
-	} else {
-		return via1registers[reg];
+	switch (reg) {
+		case 0:
+			return memory_get_rom_bank(); // PB: ROM bank, IEC
+		case 1:
+			return memory_get_ram_bank(); // PA: RAM bank
+		case 4:
+		case 5:
+		case 8:
+		case 9:
+			// timer A and B: return random numbers for RND(0)
+			// XXX TODO: these should be real timers :)
+			return rand() & 0xff;
+		default:
+			return via1registers[reg];
 	}
 }
 
@@ -82,18 +94,19 @@ via2_init()
 uint8_t
 via2_read(uint8_t reg)
 {
-	if (reg == 0) {
-		// PB
-		// 0 input  -> take input bit
-		// 1 output -> take output bit
-		return (via2pb_in & (via2registers[2] ^ 0xff)) |
-		       (via2registers[0] & via2registers[2]);
-	} else if (reg == 1) {
-		// PA
+	// DDR=0 (input)  -> take input bit
+	// DDR=1 (output) -> take output bit
+	if (reg == 0) { // PB
 		uint8_t value =
-			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_clk_out << 1) |
-			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_data_out) |
-			0x50; // short-circuit NES/SNES contoller -> not present
+			(via2registers[2] & PS2_CLK_MASK ? 0 : ps2_port[1].clk_out << 1) |
+			(via2registers[2] & PS2_DATA_MASK ? 0 : ps2_port[1].data_out);
+		return value;
+	} else if (reg == 1) { // PA
+		uint8_t value =
+			(via2registers[3] & PS2_CLK_MASK ? 0 : ps2_port[0].clk_out << 1) |
+			(via2registers[3] & PS2_DATA_MASK ? 0 : ps2_port[0].data_out);
+			value = value | (joystick1_data ? JOY_DATA1_MASK : 0) |
+							(joystick2_data ? JOY_DATA2_MASK : 0);
 		return value;
 	} else {
 		return via2registers[reg];
@@ -105,14 +118,16 @@ via2_write(uint8_t reg, uint8_t value)
 {
 	via2registers[reg] = value;
 
-	if (reg == 0) {
+	if (reg == 0 || reg == 2) {
 		// PB
-	} else if (reg == 2) {
-		// PB DDRB
+		ps2_port[1].clk_in = via2registers[2] & PS2_CLK_MASK ? via2registers[0] & PS2_CLK_MASK : 1;
+		ps2_port[1].data_in = via2registers[2] & PS2_DATA_MASK ? via2registers[0] & PS2_DATA_MASK : 1;
 	} else if (reg == 1 || reg == 3) {
 		// PA
-		ps2_clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
-		ps2_data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
+		ps2_port[0].clk_in = via2registers[3] & PS2_CLK_MASK ? via2registers[1] & PS2_CLK_MASK : 1;
+		ps2_port[0].data_in = via2registers[3] & PS2_DATA_MASK ? via2registers[1] & PS2_DATA_MASK : 1;
+		joystick_latch = via2registers[1] & JOY_LATCH_MASK;
+		joystick_clock = via2registers[1] & JOY_CLK_MASK;
 	}
 }
 

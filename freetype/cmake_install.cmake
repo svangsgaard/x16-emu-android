@@ -1,4 +1,4 @@
-# Install script for directory: /Users/sv/git/x16-emu-android/freetype
+# Install script for directory: /Users/mpe18/Documents/code/x16-emu-android/freetype
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
