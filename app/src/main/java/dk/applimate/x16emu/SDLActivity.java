@@ -1,34 +1,67 @@
 package dk.applimate.x16emu;
 
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.AssetManager;
+import android.graphics.Color;
+import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
+import android.media.MediaRecorder;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
+import android.text.InputType;
+import android.util.Log;
+import android.util.SparseArray;
+import android.view.Display;
+import android.view.Gravity;
+import android.view.InputDevice;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.lang.reflect.Method;
-
-import android.app.*;
-import android.content.*;
-import android.text.InputType;
-import android.view.*;
-import android.view.inputmethod.BaseInputConnection;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputConnection;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.RelativeLayout;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.os.*;
-import android.util.Log;
-import android.util.SparseArray;
-import android.graphics.*;
-import android.graphics.drawable.Drawable;
-import android.media.*;
-import android.hardware.*;
-import android.content.pm.ActivityInfo;
 
 /**
  SDL Activity
@@ -1024,13 +1057,60 @@ public class SDLActivity extends Activity {
 class SDLMain implements Runnable {
     @Override
     public void run() {
+
+        copyAssets();
         // Runs SDL_main()
         SDLActivity.nativeInit(SDLActivity.mSingleton.getArguments());
 
         //Log.v("SDL", "SDL thread terminated");
     }
-}
 
+    private void copyAssets() {
+        AssetManager assetManager = SDLActivity.getContext().getAssets();
+        String[] files = null;
+        try {
+            files = assetManager.list("");
+        } catch (IOException e) {
+            Log.e("tag", "Failed to get asset file list.", e);
+        }
+        if (files != null) for (String filename : files) {
+            InputStream in = null;
+            OutputStream out = null;
+            try {
+                in = assetManager.open(filename);
+                File outFile = new File(SDLActivity.getContext().getApplicationContext().getFilesDir(), filename);
+                out = new FileOutputStream(outFile);
+                copyFile(in, out);
+            } catch (FileNotFoundException e) {
+                Log.e("tag", "Failed to copy asset file: " + filename, e);
+            } catch (IOException e) {
+                Log.e("tag", "Failed to copy asset file: " + filename, e);
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        // NOOP
+                    }
+                }
+                if (out != null) {
+                    try {
+                        out.close();
+                    } catch (IOException e) {
+                        // NOOP
+                    }
+                }
+            }
+        }
+    }
+    private void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while((read = in.read(buffer)) != -1){
+            out.write(buffer, 0, read);
+        }
+    }
+}
 
 /**
  SDLSurface. This is what we draw on, so we need to know when it's created

@@ -28,6 +28,7 @@ add_library(
             # src/main.cpp
 
             src/cpu/fake6502.c
+            src/extern/src/ym2151.c
             src/video.c
             src/memory.c
             src/via.c
@@ -39,6 +40,14 @@ add_library(
             src/disasm.c
             src/spi.c
             src/vera_spi.c
+            src/rendertext.c
+            src/keyboard.c
+            src/loadsave.c
+            src/sdcard.c
+            src/spi.c
+            src/vera_spi.c
+            src/vera_uart.c
+            src/joystick.c
            )
 
 

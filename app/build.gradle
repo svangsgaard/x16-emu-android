@@ -22,7 +22,7 @@ apply plugin: 'kotlin-android-extensions'
     }
 */
     android {
-        compileSdkVersion = gradle.sdkVersion
+        compileSdkVersion = 29
 
         defaultConfig {
             applicationId = 'dk.applimate.x16emu'

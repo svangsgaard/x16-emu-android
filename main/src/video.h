@@ -7,22 +7,28 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#if __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#include "ios_functions.h"
+#endif
+#endif
+
 #include <SDL.h>
+
 #include "glue.h"
 
-#ifdef VERA_V0_8
-bool video_init(int window_scale);
-#else
-bool video_init(uint8_t *chargen, int window_scale);
-#endif
+bool video_init(int window_scale, char *quality);
 void video_reset(void);
 bool video_step(float mhz);
 bool video_update(void);
 void video_end(void);
 bool video_get_irq_out(void);
-
-uint8_t video_read(uint8_t reg);
+void video_save(FILE *f);
+uint8_t video_read(uint8_t reg, bool debugOn);
 void video_write(uint8_t reg, uint8_t value);
+void video_update_title(const char* window_title);
 
 uint8_t via1_read(uint8_t reg);
 void via1_write(uint8_t reg, uint8_t value);

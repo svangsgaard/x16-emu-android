@@ -6,6 +6,7 @@
 #include "sdcard.h"
 
 static int cmd_receive_counter;
+FILE *sdcard_file = NULL;
 
 void
 sdcard_select()
@@ -22,6 +23,11 @@ sdcard_handle(uint8_t inbyte)
 	static int response_length = 0;
 	static int response_counter = 0;
 	uint8_t outbyte;
+
+	if (!sdcard_file) {
+		// no SD card connected
+		return 0xff;
+	}
 
 	if (cmd_receive_counter == 0 && inbyte == 0xff) {
 		// send response data
@@ -61,7 +67,7 @@ sdcard_handle(uint8_t inbyte)
 				}
 				case 0x40 + 16: {
 					// set block size
-					printf("Set block size = 0x%04x\n", cmd[2] << 8 | cmd[3]);
+//					printf("Set block size = 0x%04x\n", cmd[2] << 8 | cmd[3]);
 					static const uint8_t r[] = { 1 };
 					response = r;
 					response_length = sizeof(r);
@@ -77,7 +83,7 @@ sdcard_handle(uint8_t inbyte)
 					static uint8_t read_block_respose[2 + 512 + 2];
 					read_block_respose[0] = 0;
 					read_block_respose[1] = 0xfe;
-					printf("Reading LBA %d\n", lba);
+//					printf("Reading LBA %d\n", lba);
 					fseek(sdcard_file, lba * 512, SEEK_SET);
 					int bytes_read = fread(&read_block_respose[2], 1, 512, sdcard_file);
 					if (bytes_read != 512) {

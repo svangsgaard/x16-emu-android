@@ -10,12 +10,18 @@
 #define PS2_DATA_MASK 1
 #define PS2_CLK_MASK 2
 
-extern int ps2_clk_out, ps2_data_out;
-extern int ps2_clk_in, ps2_data_in;
+typedef struct {
+	int clk_out;
+	int data_out;
+	int clk_in;
+	int data_in;
+} ps2_port_t;
 
-void kbd_buffer_add(uint8_t code);
-uint8_t kbd_buffer_remove();
-void ps2_step();
+extern ps2_port_t ps2_port[2];
+
+bool ps2_buffer_can_fit(int i, int n);
+void ps2_buffer_add(int i, uint8_t byte);
+void ps2_step(int i);
 
 // fake mouse
 void mouse_button_down(int num);
