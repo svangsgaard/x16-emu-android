@@ -126,6 +126,7 @@ public class SDLActivity extends Activity {
      * @return arguments for the native application.
      */
     protected String[] getArguments() {
+        //String[] args = {"-mhz", "1"};
         return new String[0];
     }
 
