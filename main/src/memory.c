@@ -4,33 +4,102 @@
 
 #include <sys/types.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include "glue.h"
 #include "via.h"
 #include "memory.h"
 #include "video.h"
-#ifdef WITH_YM2151
-#include "ym2151.h"
-#endif
-#include "ps2.h"
+#include "ymglue.h"
+#include "cpu/fake6502.h"
+#include "wav_recorder.h"
+#include "audio.h"
+#include "cartridge.h"
+#include "iso_8859_15.h"
 
 uint8_t ram_bank;
 uint8_t rom_bank;
+
 uint8_t *RAM;
 uint8_t ROM[ROM_SIZE];
+extern uint8_t *CART;
+
+static uint8_t addr_ym = 0;
+
+bool randomizeRAM = false;
+bool reportUninitializedAccess = false;
+bool *RAM_access_flags;
+
+static uint32_t clock_snap = 0UL;
+static uint32_t clock_base = 0UL;
 
 #define DEVICE_EMULATOR (0x9fb0)
+
+void cpuio_write(uint8_t reg, uint8_t value);
 
 void
 memory_init()
 {
+	// Initialize RAM array
 	RAM = calloc(RAM_SIZE, sizeof(uint8_t));
+	
+	// Randomize all RAM (if option selected)
+	if (randomizeRAM) {
+		time_t t;
+		srand((unsigned)time(&t));
+		for (int i = 0; i < RAM_SIZE; i++) {
+			RAM[i] = rand();
+		}
+	}
+
+	// Initialize RAM access flag array (if option selected)
+	if (reportUninitializedAccess) {
+		RAM_access_flags = (bool*) malloc(RAM_SIZE * sizeof(bool));
+		for (int i = 0; i < RAM_SIZE; i++) {
+			RAM_access_flags[i] = false;
+		}
+	}
+
+	memory_reset();
+}
+
+void
+memory_reset()
+{
+	// default banks are 0
+	memory_set_ram_bank(0);
+	memory_set_rom_bank(0);
+}
+
+void
+memory_report_uninitialized_access(bool value)
+{
+	reportUninitializedAccess = value;
+}
+
+void
+memory_randomize_ram(bool value)
+{
+	randomizeRAM = value;
+}
+
+void
+memory_initialize_cart(uint8_t *mem)
+{
+	if(randomizeRAM) {
+		for(int i=0; i<0x4000; ++i) {
+			mem[i] = rand();
+		}
+	} else {
+		memset(mem, 0, 0x4000);
+	}
 }
 
 static uint8_t
 effective_ram_bank()
 {
-	return ram_bank % num_ram_banks;
+	return ram_bank;
 }
 
 //
@@ -40,6 +109,29 @@ effective_ram_bank()
 
 uint8_t
 read6502(uint16_t address) {
+	// Report access to uninitialized RAM (if option selected)
+	if (reportUninitializedAccess) {
+		uint8_t pc_bank;
+		
+		if (pc < 0xa000) {
+			pc_bank = 0;
+		} else if (pc < 0xc000) {
+			pc_bank = memory_get_ram_bank();
+		} else {
+			pc_bank = memory_get_rom_bank();
+		}
+
+		if (address < 0x9f00) {
+			if (RAM_access_flags[address] == false) {
+				printf("Warning: %02X:%04X accessed uninitialized RAM address 00:%04X\n", pc_bank, pc, address);
+			}
+		} else if (address >= 0xa000 && address < 0xc000) {
+			if (effective_ram_bank() < num_ram_banks && RAM_access_flags[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] == false){
+				printf("Warning: %02X:%04X accessed uninitialized RAM address %02X:%04X\n", pc_bank, pc, memory_get_ram_bank(), address);
+			}
+		}
+	}
+
 	return real_read6502(address, false, 0);
 }
 
@@ -49,79 +141,117 @@ real_read6502(uint16_t address, bool debugOn, uint8_t bank)
 	if (address < 0x9f00) { // RAM
 		return RAM[address];
 	} else if (address < 0xa000) { // I/O
-		if (address >= 0x9f00 && address < 0x9f20) {
-			// TODO: sound
-			return 0;
-		} else if (address >= 0x9f20 && address < 0x9f28) {
-			return video_read(address & 7, debugOn);
+		if (!debugOn && address >= 0x9fa0) {
+			// slow IO6-8 range
+			clockticks6502 += 3;
+		}
+		if (address >= 0x9f00 && address < 0x9f10) {
+			return via1_read(address & 0xf, debugOn);
+		} else if (has_via2 && (address >= 0x9f10 && address < 0x9f20)) {
+			return via2_read(address & 0xf, debugOn);
+		} else if (address >= 0x9f20 && address < 0x9f40) {
+			return video_read(address & 0x1f, debugOn);
 		} else if (address >= 0x9f40 && address < 0x9f60) {
-			// TODO: character LCD
-			return 0;
-		} else if (address >= 0x9f60 && address < 0x9f70) {
-			return via1_read(address & 0xf);
-		} else if (address >= 0x9f70 && address < 0x9f80) {
-			return via2_read(address & 0xf);
-		} else if (address >= 0x9f80 && address < 0x9fa0) {
-			// TODO: RTC
-			return 0;
-		} else if (address >= 0x9fa0 && address < 0x9fb0) {
-			// fake mouse
-			return mouse_read(address & 0x1f);
+			// slow IO3 range
+			if (!debugOn) {
+				clockticks6502 += 3;
+			}
+			if (address == 0x9f41) {
+				audio_render();
+				return YM_read_status();
+			}
+			return 0x9f; // open bus read
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
 			return emu_read(address & 0xf, debugOn);
 		} else {
-			return 0;
+			// future expansion
+			return 0x9f; // open bus read
 		}
 	} else if (address < 0xc000) { // banked RAM
-		int ramBank = debugOn ? bank % num_ram_banks : effective_ram_bank();
-		return	RAM[0xa000 + (ramBank << 13) + address - 0xa000];
+		int ramBank = debugOn ? bank : effective_ram_bank();
+		if (ramBank < num_ram_banks) {
+			return RAM[0xa000 + (ramBank << 13) + address - 0xa000];
+		} else {
+			return (address >> 8) & 0xff; // open bus read
+		}
 
 
 	} else { // banked ROM
-		int romBank = debugOn ? bank % NUM_ROM_BANKS : rom_bank;
-		return ROM[(romBank << 14) + address - 0xc000];
+		int romBank = debugOn ? bank : rom_bank;
+		if (romBank < 32) {
+			return ROM[(romBank << 14) + address - 0xc000];
+		} else {
+			if (!CART) {
+				return (address >> 8) & 0xff; // open bus read
+			}
+			return cartridge_read(address, romBank);
+		}
 	}
 }
 
 void
 write6502(uint16_t address, uint8_t value)
 {
-#ifdef WITH_YM2151
-	static uint8_t lastAudioAdr = 0;
-#endif
+	// Update RAM access flag
+	if (reportUninitializedAccess) {
+		if (address < 0xa000) {
+			RAM_access_flags[address] = true;
+		} else if (address < 0xc000) {
+			if (effective_ram_bank() < num_ram_banks)
+				RAM_access_flags[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = true;
+		}
+	}
+	// Write to CPU I/O ports
+	if (address < 2) { 
+		cpuio_write(address, value);
+	}
+	// Write to memory
 	if (address < 0x9f00) { // RAM
 		RAM[address] = value;
 	} else if (address < 0xa000) { // I/O
-		if (address >= 0x9f00 && address < 0x9f20) {
-			// TODO: sound
-		} else if (address >= 0x9f20 && address < 0x9f40) {
-			video_write(address & 7, value);
-		} else if (address >= 0x9f40 && address < 0x9f60) {
-			// TODO: character LCD
-		} else if (address >= 0x9f60 && address < 0x9f70) {
+		if (address >= 0x9fa0) {
+			// slow IO6-8 range
+			clockticks6502 += 3;
+		}
+		if (address >= 0x9f00 && address < 0x9f10) {
 			via1_write(address & 0xf, value);
-		} else if (address >= 0x9f70 && address < 0x9f80) {
+		} else if (has_via2 && (address >= 0x9f10 && address < 0x9f20)) {
 			via2_write(address & 0xf, value);
-		} else if (address >= 0x9f80 && address < 0x9fa0) {
-			// TODO: RTC
+		} else if (address >= 0x9f20 && address < 0x9f40) {
+			video_write(address & 0x1f, value);
+		} else if (address >= 0x9f40 && address < 0x9f60) {
+			// slow IO3 range
+			clockticks6502 += 3;
+			if (address == 0x9f40) {        // YM address
+				addr_ym = value;
+			} else if (address == 0x9f41) { // YM data
+				audio_render();
+				YM_write_reg(addr_ym, value);
+			}
+			// TODO:
+			//   $9F42 & $9F43: SAA1099P
 		} else if (address >= 0x9fb0 && address < 0x9fc0) {
 			// emulator state
 			emu_write(address & 0xf, value);
-#ifdef WITH_YM2151
-		} else if (address == 0x9fe0) {
-			lastAudioAdr = value;
-		} else if (address == 0x9fe1) {
-			YM_write_reg(lastAudioAdr, value);
-#endif
 		} else {
 			// future expansion
 		}
 	} else if (address < 0xc000) { // banked RAM
-		RAM[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = value;
+		if (effective_ram_bank() < num_ram_banks)
+			RAM[0xa000 + (effective_ram_bank() << 13) + address - 0xa000] = value;
 	} else { // ROM
-		// ignore
+		if (rom_bank >= 32) { // Cartridge ROM/RAM
+			cartridge_write(address, rom_bank, value);
+		}
+		// ignore if base ROM (banks 0-31)
 	}
+}
+
+void
+vp6502()
+{
+	memory_set_rom_bank(0);
 }
 
 //
@@ -129,13 +259,13 @@ write6502(uint16_t address, uint8_t value)
 //
 
 void
-memory_save(FILE *f, bool dump_ram, bool dump_bank)
+memory_save(SDL_RWops *f, bool dump_ram, bool dump_bank)
 {
 	if (dump_ram) {
-		fwrite(&RAM[0], sizeof(uint8_t), 0xa000, f);
+		SDL_RWwrite(f, &RAM[0], sizeof(uint8_t), 0xa000);
 	}
 	if (dump_bank) {
-		fwrite(&RAM[0xa000], sizeof(uint8_t), (num_ram_banks * 8192), f);
+		SDL_RWwrite(f, &RAM[0xa000], sizeof(uint8_t), (num_ram_banks * 8192));
 	}
 }
 
@@ -159,13 +289,26 @@ memory_get_ram_bank()
 void
 memory_set_rom_bank(uint8_t bank)
 {
-	rom_bank = bank & (NUM_ROM_BANKS - 1);;
+	rom_bank = bank;
 }
 
 uint8_t
 memory_get_rom_bank()
 {
 	return rom_bank;
+}
+
+void
+cpuio_write(uint8_t reg, uint8_t value)
+{
+	switch (reg) {
+		case 0:
+			memory_set_ram_bank(value);
+			break;
+		case 1:
+			memory_set_rom_bank(value);
+			break;
+	}
 }
 
 // Control the GIF recorder
@@ -195,6 +338,16 @@ emu_recorder_set(gif_recorder_command_t command)
 // 3: echo_mode
 // 4: save_on_exit
 // 5: record_gif
+// 6: record_wav
+// 7: cmd key toggle
+// 8: write: reset cpu clock counter
+// 8: read: snapshots cpu clock counter and reads the LSB bits 0-7
+// 9: write: output debug byte 1
+// 9: read: cpu clock bits 8-15
+// 10: write: output debug byte 2
+// 10: read: cpu clock bits 16-23
+// 11: write: write character to STDOUT of console
+// 11: read: cpu clock MSB bits 24-31
 // POKE $9FB3,1:PRINT"ECHO MODE IS ON":POKE $9FB3,0
 void
 emu_write(uint8_t reg, uint8_t value)
@@ -207,6 +360,22 @@ emu_write(uint8_t reg, uint8_t value)
 		case 3: echo_mode = value; break;
 		case 4: save_on_exit = v; break;
 		case 5: emu_recorder_set((gif_recorder_command_t) value); break;
+		case 6: wav_recorder_set((wav_recorder_command_t) value); break;
+		case 7: disable_emu_cmd_keys = v; break;
+		case 8: clock_base = clockticks6502; break;
+		case 9: printf("User debug 1: $%02x\n", value); fflush(stdout); break;
+		case 10: printf("User debug 2: $%02x\n", value); fflush(stdout); break;
+		case 11: {
+			if (value == 0x09 || value == 0x0a || value == 0x0d || (value >= 0x20 && value < 0x7f)) {
+				printf("%c", value);
+			} else if (value >= 0xa1) {
+				print_iso8859_15_char((char) value);
+			} else {
+				printf("\xef\xbf\xbd"); // �
+			}
+			fflush(stdout);
+			break;
+		}
 		default: printf("WARN: Invalid register %x\n", DEVICE_EMULATOR + reg);
 	}
 }
@@ -226,6 +395,22 @@ emu_read(uint8_t reg, bool debugOn)
 		return save_on_exit ? 1 : 0;
 	} else if (reg == 5) {
 		return record_gif;
+	} else if (reg == 6) {
+		return wav_recorder_get_state();
+	} else if (reg == 7) {
+		return disable_emu_cmd_keys ? 1 : 0;
+
+	} else if (reg == 8) {
+		if (!debugOn)
+			clock_snap = clockticks6502 - clock_base;
+		return (clock_snap >> 0) & 0xff;
+	} else if (reg == 9) {
+		return (clock_snap >> 8) & 0xff;
+	} else if (reg == 10) {
+		return (clock_snap >> 16) & 0xff;
+	} else if (reg == 11) {
+		return (clock_snap >> 24) & 0xff;
+
 	} else if (reg == 13) {
 		return keymap;
 	} else if (reg == 14) {

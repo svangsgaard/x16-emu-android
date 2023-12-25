@@ -19,36 +19,50 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/ ${CMAKE_CURRENT_SOUR
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf)
 
 add_library(
-             main-lib
+    main-lib
 
-             SHARED
+    SHARED
 
-             # Provides a relative path to your source file(s).
-             src/SDL_android_main.c
-            # src/main.cpp
+    # Provides a relative path to your source file(s).
+    src/SDL_android_main.c
 
-            src/cpu/fake6502.c
-            src/extern/src/ym2151.c
-            src/video.c
-            src/memory.c
-            src/via.c
-            src/ps2.c
-            src/main.c
-            src/sdcard.c
-            src/loadsave.c
-            src/debugger.c
-            src/disasm.c
-            src/spi.c
-            src/vera_spi.c
-            src/rendertext.c
-            src/keyboard.c
-            src/loadsave.c
-            src/sdcard.c
-            src/spi.c
-            src/vera_spi.c
-            src/vera_uart.c
-            src/joystick.c
-           )
+    # r39
+    src/main.c
+    src/audio.c
+    src/cartridge.c
+    src/debugger.c
+    src/disasm.c
+    src/files.c
+    src/i2c.c
+    src/icon.c
+    src/ieee.c
+    src/iso_8859_15.c
+    src/joystick.c
+    src/keyboard.c
+    src/memory.c
+    src/rendertext.c
+    src/rtc.c
+    src/sdcard.c
+    src/serial.c
+    src/smc.c
+    src/testbench.c
+    src/timing.c
+    src/vera_pcm.c
+    src/vera_psg.c
+    src/vera_spi.c
+    src/video.c
+    src/via.c
+    src/wav_recorder.c
+    src/ymglue.cpp
+
+    src/cpu/fake6502.c
+
+    src/extern/ymfm/src/ymfm_adpcm.cpp
+    src/extern/ymfm/src/ymfm_opl.cpp
+    src/extern/ymfm/src/ymfm_opm.cpp
+    src/extern/ymfm/src/ymfm_pcm.cpp
+
+)
 
 
 

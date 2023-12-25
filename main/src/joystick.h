@@ -1,40 +1,26 @@
-/**********************************************/
-// File     :     joystick.h
-// Author   :     John Bliss
-// Date     :     September 27th 2019
-/**********************************************/
+#pragma once
+#ifndef JOYSTICK_H
+#define JOYSTICK_H
 
-#ifndef _JOYSTICK_H_
-#define _JOYSTICK_H_
-
-#include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <SDL.h>
+#include <stdbool.h>
 
-#include "glue.h"
-#include "via.h"
+#define JOY_LATCH_MASK 0x04
+#define JOY_CLK_MASK 0x08
 
-#define JOY_LATCH_MASK 0x08
-#define JOY_DATA1_MASK 0x10
-#define JOY_CLK_MASK 0x20
-#define JOY_DATA2_MASK 0x40
+#define NUM_JOYSTICKS 4
 
-enum joy_status { NES=0, NONE=1, SNES=0xF };
-extern enum joy_status joy1_mode;
-extern enum joy_status joy2_mode;
-extern bool joystick_latch, joystick_clock;
-extern bool joystick1_data, joystick2_data;
+extern uint8_t Joystick_data;
+extern bool Joystick_slots_enabled[NUM_JOYSTICKS];
 
+bool joystick_init(void); //initialize SDL controllers
+void joystick_add(int index);
+void joystick_remove(int index);
 
-bool joystick_init(); //initialize SDL controllers
+void joystick_button_down(int instance_id, uint8_t button);
+void joystick_button_up(int instance_id, uint8_t button);
 
-void joystick_step(); //do next step for handling joysticks
-
-bool handle_latch(bool latch, bool clock);  //used internally to check when to
-											//  write to VIA
-
-					//Used to get the 16-bit data needed to send
-uint16_t get_joystick_state(SDL_GameController *control, enum joy_status mode);
+void joystick_set_latch(bool value);
+void joystick_set_clock(bool value);
 
 #endif

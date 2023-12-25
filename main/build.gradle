@@ -1,5 +1,7 @@
 apply plugin: 'com.android.model.native'
 
+// TODO what is going on here? Removing SDL2 entirely doesn't break it?
+
 model {
      repositories {
         libs(PrebuiltLibraries) {
@@ -74,6 +76,8 @@ model {
             CFlags.addAll([
                     "-I" + file("../SDL2/include/").absolutePath,
                     "-I" + file("../SDL2_image/include/").absolutePath,
+                    //"-I" + file("src/extern/include/").absolutePath,
+                    //"-I" + file("src/extern/src/").absolutePath,
                     "-ffastmath -Ofast -DWITH_YM2151",
             ])
             stl "stlport_static"
@@ -105,7 +109,7 @@ model {
     }
 }
 
-task(distributeLib, type : Copy) {
+tasks.register('distributeLib', Copy) {
     // trigger build library
     dependsOn assemble
     into gradle.libDistributionRoot + '/main/'

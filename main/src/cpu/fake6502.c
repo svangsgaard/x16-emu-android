@@ -104,7 +104,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "../debugger.h"
 
 //6502 defines
 #define UNDOCUMENTED //when this is defined, undocumented opcodes are handled.
@@ -139,10 +138,13 @@ uint16_t oldpc, ea, reladdr, value, result;
 uint8_t opcode, oldstatus;
 
 uint8_t penaltyop, penaltyaddr;
+uint8_t waiting = 0;
 
 //externally supplied functions
 extern uint8_t read6502(uint16_t address);
 extern void write6502(uint16_t address, uint8_t value);
+extern void stop6502(uint16_t address);
+extern void vp6502();
 
 #include "support.h"
 #include "modes.h"
@@ -170,22 +172,38 @@ static void putvalue(uint16_t saveval) {
 
 void nmi6502() {
     push16(pc);
-    push8(status);
-    status |= FLAG_INTERRUPT;
+    push8(status & ~FLAG_BREAK);
+    setinterrupt();
+    cleardecimal();
+    vp6502();
     pc = (uint16_t)read6502(0xFFFA) | ((uint16_t)read6502(0xFFFB) << 8);
+    clockticks6502 += 7; // consumed by CPU to process interrupt
+    waiting = 0;
 }
 
 void irq6502() {
-    push16(pc);
-    push8(status & ~FLAG_BREAK);
-    status |= FLAG_INTERRUPT;
-    pc = (uint16_t)read6502(0xFFFE) | ((uint16_t)read6502(0xFFFF) << 8);
+    if (!(status & FLAG_INTERRUPT)) {
+        push16(pc);
+        push8(status & ~FLAG_BREAK);
+        setinterrupt();
+        cleardecimal();
+        vp6502();
+        pc = (uint16_t)read6502(0xFFFE) | ((uint16_t)read6502(0xFFFF) << 8);
+        clockticks6502 += 7; // consumed by CPU to process interrupt
+    }
+    waiting = 0;
 }
 
 uint8_t callexternal = 0;
 void (*loopexternal)();
 
 void exec6502(uint32_t tickcount) {
+	if (waiting) {
+		clockticks6502 += tickcount;
+		clockgoal6502 = clockticks6502;
+		return;
+    }
+
     clockgoal6502 += tickcount;
    
     while (clockticks6502 < clockgoal6502) {
@@ -207,6 +225,12 @@ void exec6502(uint32_t tickcount) {
 }
 
 void step6502() {
+	if (waiting) {
+		++clockticks6502;
+		clockgoal6502 = clockticks6502;
+		return;
+	}
+
     opcode = read6502(pc++);
     status |= FLAG_CONSTANT;
 
