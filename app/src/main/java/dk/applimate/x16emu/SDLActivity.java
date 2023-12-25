@@ -203,6 +203,7 @@ public class SDLActivity extends Activity {
 
         mLayout = new RelativeLayout(this);
         mLayout.addView(mSurface);
+        mLayout.addView(new UiView(getContext()));
 
         setContentView(mLayout);
 
