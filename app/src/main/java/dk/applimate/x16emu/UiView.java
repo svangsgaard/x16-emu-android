@@ -2,6 +2,8 @@ package dk.applimate.x16emu;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.inputmethodservice.Keyboard;
+import android.inputmethodservice.KeyboardView;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -31,10 +33,56 @@ public class UiView extends RelativeLayout {
       }
     });
 
+    Keyboard keyboard = new Keyboard(context, R.xml.keyboard);
+    KeyboardView keyboardView = new KeyboardView(context, null);
+    keyboardView.setKeyboard(keyboard);
+    keyboardView.setOnKeyboardActionListener(new KeyboardView.OnKeyboardActionListener() {
+      @Override
+      public void onPress(int primaryCode) {
+
+      }
+
+      @Override
+      public void onRelease(int primaryCode) {
+
+      }
+
+      @Override
+      public void onKey(int primaryCode, int[] keyCodes) {
+
+      }
+
+      @Override
+      public void onText(CharSequence text) {
+
+      }
+
+      @Override
+      public void swipeLeft() {
+
+      }
+
+      @Override
+      public void swipeRight() {
+
+      }
+
+      @Override
+      public void swipeDown() {
+
+      }
+
+      @Override
+      public void swipeUp() {
+
+      }
+    });
+
     linearLayout.addView(message);
     linearLayout.addView(button);
+    linearLayout.addView(keyboardView);
 
-    this.addView(linearLayout);
+    //this.addView(linearLayout);
   }
 
 }

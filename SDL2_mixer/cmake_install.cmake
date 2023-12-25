@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/James/Downloads/x16-emu-android-master/SDL2_mixer
+# Install script for directory: C:/Users/James/jcake-x16/x16-emu-android/SDL2_mixer
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
