@@ -6,17 +6,14 @@ include_directories(
         # SDL_internal.h is located in src required by SDL_android_main.c bridge
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/src
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_image/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/include
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_image/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_image)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_mixer)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_ttf)
+
+SET(CMAKE_C_FLAGS "-Ofast -DWITH_YM2151 -Isrc/extern/include")
+SET(CMAKE_CXX_FLAGS "-Ofast -DWITH_YM2151 -Isrc/extern/ymfm/src")
 
 add_library(
     main-lib
@@ -26,7 +23,6 @@ add_library(
     # Provides a relative path to your source file(s).
     src/SDL_android_main.c
 
-    # r39
     src/main.c
     src/audio.c
     src/cartridge.c
@@ -78,9 +74,6 @@ find_library( # Sets the name of the path variable.
 target_link_libraries( # Specifies the target library.
                         main-lib
                         SDL2
-                        SDL2_image
                         SDL2_gfx
-                        SDL2_mixer
-                        SDL2_ttf
 
                         ${log-lib} )

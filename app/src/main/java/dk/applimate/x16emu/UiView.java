@@ -4,12 +4,17 @@ import android.content.Context;
 import android.graphics.Color;
 import android.inputmethodservice.Keyboard;
 import android.inputmethodservice.KeyboardView;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.Space;
 import android.widget.TextView;
 
 public class UiView extends RelativeLayout {
@@ -17,8 +22,11 @@ public class UiView extends RelativeLayout {
   public UiView(Context context) {
     super(context);
 
+    this.setGravity(Gravity.BOTTOM);
+
     LinearLayout linearLayout = new LinearLayout(context);
     linearLayout.setOrientation(LinearLayout.VERTICAL);
+    linearLayout.setGravity(Gravity.BOTTOM);
 
     TextView message = new TextView(context);
     message.setGravity(Gravity.CENTER);
@@ -39,7 +47,7 @@ public class UiView extends RelativeLayout {
     keyboardView.setOnKeyboardActionListener(new KeyboardView.OnKeyboardActionListener() {
       @Override
       public void onPress(int primaryCode) {
-
+        SDLActivity.onNativeKeyDown(primaryCode);
       }
 
       @Override
@@ -78,11 +86,20 @@ public class UiView extends RelativeLayout {
       }
     });
 
-    linearLayout.addView(message);
-    linearLayout.addView(button);
+    //linearLayout.addView(message);
+    //linearLayout.addView(button);
     linearLayout.addView(keyboardView);
 
-    //this.addView(linearLayout);
+    this.addView(linearLayout);
+
+    WindowManager windowManager = (WindowManager) context
+      .getSystemService(Context.WINDOW_SERVICE);
+    Display display = windowManager.getDefaultDisplay();
+    DisplayMetrics displayMetrics = new DisplayMetrics();
+    display.getMetrics(displayMetrics);
+
+    linearLayout.getLayoutParams().height = displayMetrics.heightPixels;
+
   }
 
 }

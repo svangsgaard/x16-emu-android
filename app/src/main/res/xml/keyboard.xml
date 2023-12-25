@@ -25,14 +25,10 @@
         <Key android:codes="132" android:keyLabel="F2" />
         <Key android:codes="133" android:keyLabel="F3" />
         <Key android:codes="134" android:keyLabel="F4" />
-        <Key android:codes="135" android:keyLabel="F5" />
-        <Key android:codes="136" android:keyLabel="F6" />
-        <Key android:codes="137" android:keyLabel="F7" />
-        <Key android:codes="138" android:keyLabel="F8" />
-        <Key android:codes="139" android:keyLabel="F9" />
-        <Key android:codes="140" android:keyLabel="F10" />
-        <Key android:codes="141" android:keyLabel="F11" />
-        <Key android:codes="142" android:keyLabel="F12" android:keyEdgeFlags="right" />
+        <Key android:codes="19" android:keyLabel="Up" />
+        <Key android:codes="20" android:keyLabel="Down" />
+        <Key android:codes="21" android:keyLabel="Left" />
+        <Key android:codes="22" android:keyLabel="Right" android:keyEdgeFlags="right" />
     </Row>
 
     <Row>
@@ -74,7 +70,7 @@
     </Row>
 
     <Row>
-        <Key android:codes="115" android:keyLabel="Caps" android:keyEdgeFlags="left" />
+        <Key android:codes="115" android:keyLabel="Caps" android:isSticky="true" android:isModifier="true" android:keyEdgeFlags="left" />
         <Key android:codes="54" android:keyLabel="Z" />
         <Key android:codes="52" android:keyLabel="X" />
         <Key android:codes="31" android:keyLabel="C" />
@@ -86,19 +82,11 @@
     </Row>
 
     <Row>
-        <Key android:codes="0" android:keyLabel="Something" android:keyEdgeFlags="left" />
-        <Key android:codes="62" android:keyLabel="Spacebar" />
-        <Key android:codes="66" android:keyLabel="Enter" android:keyEdgeFlags="right" />
-    </Row>
-
-    <Row>
-        <Key android:codes="67" android:keyIcon="@drawable/sym_keyboard_delete"
-            android:iconPreview="@drawable/sym_keyboard_delete"
-            android:keyEdgeFlags="left" />
-        <Key android:codes="7" android:keyLabel="0" />
-        <Key android:codes="66" android:keyEdgeFlags="right"
-            android:keyIcon="@drawable/sym_keyboard_feedback_return"
-            android:iconPreview="@drawable/sym_keyboard_feedback_return" />
+        <Key android:codes="0" android:keyLabel="Something" android:isSticky="true" android:keyEdgeFlags="left" />
+        <Key android:codes="57" android:keyLabel="Alt" android:isSticky="true" android:isModifier="true" />
+        <Key android:codes="55" android:keyLabel="," />
+        <Key android:codes="62" android:keyLabel="Spacebar" android:isRepeatable="true" />
+        <Key android:codes="66" android:keyIcon="@drawable/sym_keyboard_feedback_return" android:iconPreview="@drawable/sym_keyboard_feedback_return" android:keyEdgeFlags="right" />
     </Row>
 
 </Keyboard>

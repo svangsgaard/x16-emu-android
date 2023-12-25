@@ -26,6 +26,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.text.InputType;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.Display;
@@ -127,7 +128,8 @@ public class SDLActivity extends Activity {
      */
     protected String[] getArguments() {
         //String[] args = {"-mhz", "1"};
-        return new String[0];
+        String[] args = new String[0];
+        return args;
     }
 
     public static void initialize() {
@@ -199,6 +201,13 @@ public class SDLActivity extends Activity {
 
         // Set up the surface
         mSurface = new SDLSurface(getApplication());
+
+        WindowManager windowManager = (WindowManager) getContext()
+          .getSystemService(Context.WINDOW_SERVICE);
+        Display display = windowManager.getDefaultDisplay();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        display.getMetrics(displayMetrics);
+        mSurface.getHolder().setFixedSize(displayMetrics.widthPixels, Math.round(displayMetrics.widthPixels * 0.75f));
 
         mJoystickHandler = new SDLJoystickHandler_API12();
 
