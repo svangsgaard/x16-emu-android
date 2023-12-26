@@ -127,7 +127,15 @@ public class SDLActivity extends Activity {
      * @return arguments for the native application.
      */
     protected String[] getArguments() {
-        String[] args = {"-mhz", "8", "-quality", "linear", "-abufs", "16"};
+        String[] args = {
+          "-mhz", "8", // < 8 useful for weak devices
+          "-quality", "linear", // Nearest might be good in landscape mode
+          "-abufs", "16", // Reduces audio buffer underruns
+          "-rtc", // Real-time clock
+          "-noemucmdkeys", // No Ctrl+R etc. - might remove this later
+          "-joy1", // Untested if controller works
+          "-nohostieee" // IEEE seems important for host FS but costs CPU!
+        };
         return args;
     }
 
