@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 <Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
-    android:keyWidth="33%p" android:horizontalGap="0px"
+    android:keyWidth="10%p" android:horizontalGap="0px"
     android:verticalGap="0px" android:keyHeight="54dip">
 
     <!-- https://developer.android.com/reference/android/view/KeyEvent -->
@@ -58,7 +58,7 @@
     </Row>
 
     <Row>
-        <Key android:codes="29" android:keyLabel="A" android:keyEdgeFlags="left" />
+        <Key android:codes="29" android:keyLabel="A" android:horizontalGap="5%p" android:keyEdgeFlags="left" />
         <Key android:codes="47" android:keyLabel="S" />
         <Key android:codes="32" android:keyLabel="D" />
         <Key android:codes="34" android:keyLabel="F" />
