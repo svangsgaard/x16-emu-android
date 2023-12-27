@@ -495,10 +495,8 @@ usage_keymap()
 int
 main(int argc, char **argv)
 {
-	char *rom_filename = "rom.bin";
-	char rom_path_data[PATH_MAX];
+    char *rom_path = "/data/user/0/dk.applimate.x16emu/files/rom.bin";
 
-	char *rom_path = rom_path_data;
 	char *prg_path = NULL;
 	char *bas_path = NULL;
 	char *sdcard_path = NULL;
@@ -512,8 +510,8 @@ main(int argc, char **argv)
 	run_after_load = false;
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER
-             #ifdef WITH_YM2151
-             | SDL_INIT_AUDIO
+#ifdef WITH_YM2151
+            | SDL_INIT_AUDIO
 #endif
     );
 

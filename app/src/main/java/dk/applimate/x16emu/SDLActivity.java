@@ -6,6 +6,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
 import android.graphics.Color;
@@ -25,6 +26,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -94,6 +96,18 @@ public class SDLActivity extends Activity {
     protected static AudioTrack mAudioTrack;
     protected static AudioRecord mAudioRecord;
 
+    public static boolean haveCopiedAssets() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SDLActivity.getContext());
+        return prefs.getBoolean("assetsCopied", false);
+    }
+
+    public static void setCopiedAssets() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SDLActivity.getContext());
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("assetsCopied", true);
+        editor.apply();
+    }
+
     /**
      * This method is called by SDL before loading the native shared libraries.
      * It can be overridden to provide names of shared libraries to be loaded.
@@ -134,7 +148,9 @@ public class SDLActivity extends Activity {
           "-rtc", // Real-time clock
           "-noemucmdkeys", // No Ctrl+R etc. - might remove this later
           "-joy1", // Untested if controller works
-          "-nohostieee" // IEEE seems important for host FS but costs CPU!
+          "-nohostieee", // IEEE seems important for host FS but costs CPU!
+          "-sdcard", "sdcard.img",
+          "-rom", "rom.bin"
         };
         return args;
     }
@@ -1071,7 +1087,10 @@ class SDLMain implements Runnable {
     @Override
     public void run() {
 
-        copyAssets();
+        if (!SDLActivity.haveCopiedAssets()) {
+            copyAssets();
+            SDLActivity.setCopiedAssets();
+        }
         // Runs SDL_main()
         SDLActivity.nativeInit(SDLActivity.mSingleton.getArguments());
 
@@ -1087,6 +1106,7 @@ class SDLMain implements Runnable {
             Log.e("tag", "Failed to get asset file list.", e);
         }
         if (files != null) for (String filename : files) {
+            if (filename.equals("geoid_height_map") || filename.equals("images") || filename.equals("webkit")) continue;
             InputStream in = null;
             OutputStream out = null;
             try {

@@ -28,7 +28,8 @@
         <Key android:codes="19" android:keyLabel="Up" />
         <Key android:codes="20" android:keyLabel="Down" />
         <Key android:codes="21" android:keyLabel="Left" />
-        <Key android:codes="22" android:keyLabel="Right" android:keyEdgeFlags="right" />
+        <Key android:codes="22" android:keyLabel="Right" />
+        <Key android:codes="67" android:keyLabel="Del" android:keyEdgeFlags="right" />
     </Row>
 
     <Row>
