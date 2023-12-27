@@ -225,8 +225,8 @@ void exec6502(uint32_t tickcount) {
 }
 
 void step6502() {
-	if (waiting) {
-		++clockticks6502;
+	if (waiting) { // https://cx16forum.com/forum/viewtopic.php?p=7659#p7659
+		clockticks6502 += 127; // Half a scanline
 		clockgoal6502 = clockticks6502;
 		return;
 	}
