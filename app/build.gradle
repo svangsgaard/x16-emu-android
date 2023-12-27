@@ -5,8 +5,9 @@ apply plugin: 'com.android.application'
 
         defaultConfig {
             applicationId = 'dk.applimate.x16emu'
-            minSdkVersion 14
+            minSdkVersion 16
             targetSdkVersion 34
+            ndkVersion "23.2.8568313" // Last version to support Jelly Bean
         }
 
         buildTypes {
