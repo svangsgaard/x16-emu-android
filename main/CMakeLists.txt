@@ -3,12 +3,12 @@ cmake_minimum_required(VERSION 3.4.1)
 project(x16-emulator)
 
 include_directories(
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/include
 
-        # SDL_internal.h is located in src required by SDL_android_main.c bridge
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/src
+    # SDL_internal.h is located in src required by SDL_android_main.c bridge
+    ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/src
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/include
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2)
