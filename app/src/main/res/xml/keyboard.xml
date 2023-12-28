@@ -24,7 +24,7 @@
         <Key android:codes="131" android:keyLabel="F1" />
         <Key android:codes="132" android:keyLabel="F2" />
         <Key android:codes="133" android:keyLabel="F3" />
-        <Key android:codes="134" android:keyLabel="F4" />
+        <Key android:codes="136" android:keyLabel="F6" />
         <Key android:codes="19" android:keyLabel="Up" />
         <Key android:codes="20" android:keyLabel="Down" />
         <Key android:codes="21" android:keyLabel="Left" />

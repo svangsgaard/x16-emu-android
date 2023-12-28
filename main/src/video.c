@@ -330,7 +330,7 @@ video_init(int window_scale, float screen_x_scale, char *quality, bool fullscree
 	sdlTexture = SDL_CreateTexture(renderer,
 									SDL_PIXELFORMAT_RGB888,
 									SDL_TEXTUREACCESS_STREAMING,
-									SCREEN_WIDTH, SCREEN_HEIGHT);
+									SCREEN_WIDTH, SCREEN_HEIGHT / 2);
 
 	SDL_SetWindowTitle(window, WINDOW_TITLE);
 	SDL_SetWindowIcon(window, CommanderX16Icon());
@@ -1050,9 +1050,11 @@ render_line(uint16_t y, float scan_pos_x)
 		refresh_palette();
 	}
 
-	if (y >= SCREEN_HEIGHT) {
+	if (y >= SCREEN_HEIGHT || y & 1) {
 		return;
 	}
+
+	y /= 2;
 
 	uint16_t s_pos_x = round(scan_pos_x);
 	if (s_pos_x > SCREEN_WIDTH) {

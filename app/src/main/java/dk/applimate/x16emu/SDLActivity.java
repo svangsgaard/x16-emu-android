@@ -153,9 +153,9 @@ public class SDLActivity extends Activity {
      */
     protected String[] getArguments() {
         String[] args = {
-          "-mhz", "8", // < 8 useful for weak devices
+          "-mhz", "2", // < 8 useful for weak devices
           "-quality", "linear", // Nearest might be good in landscape mode
-          "-abufs", "16", // Reduces audio buffer underruns
+          "-abufs", "24", // Reduces audio buffer underruns
           "-rtc", // Real-time clock
           "-noemucmdkeys", // No Ctrl+R etc. - might remove this later
           "-joy1", // Untested if controller works
@@ -206,6 +206,7 @@ public class SDLActivity extends Activity {
 
                 Log.d("myFiles", Arrays.toString(Objects.requireNonNull(new File(getFilesDir().toURI()).list())));
 
+                // todo this happens before assets are copied which is wrong
                 File[] filesToPack = {
                   new File(getFilesDir() + "/XIXIT.PRG"),
                   new File(getFilesDir() + "/LEV1.BIN"),
@@ -223,6 +224,7 @@ public class SDLActivity extends Activity {
                   new File(getFilesDir() + "/MUSIC.BIN"),
                   new File(getFilesDir() + "/SHAPES.BIN"),
                   new File(getFilesDir() + "/SOUNDS.BIN"),
+                  new File(getFilesDir() + "/AUTOBOOT.X16"),
                 };
                 ImageBuilder.of(filesToPack).createDiskImage(outFile, outSize);
 
