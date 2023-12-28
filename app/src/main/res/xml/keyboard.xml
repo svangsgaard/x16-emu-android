@@ -86,6 +86,8 @@
         <Key android:codes="0" android:keyLabel="Something" android:isSticky="true" android:keyEdgeFlags="left" />
         <Key android:codes="57" android:keyLabel="Alt" android:isSticky="true" android:isModifier="true" />
         <Key android:codes="55" android:keyLabel="," />
+        <Key android:codes="56" android:keyLabel="." />
+        <Key android:codes="75" android:keyLabel="quot" />
         <Key android:codes="62" android:keyLabel="Spacebar" android:isRepeatable="true" />
         <Key android:codes="66" android:keyIcon="@drawable/sym_keyboard_feedback_return" android:iconPreview="@drawable/sym_keyboard_feedback_return" android:keyEdgeFlags="right" />
     </Row>

@@ -1,6 +1,8 @@
 
 package de.waldheinz.fs.util;
 
+import android.util.Log;
+
 import de.waldheinz.fs.fat.FatFile;
 import de.waldheinz.fs.fat.FatFileSystem;
 import de.waldheinz.fs.fat.FatLfnDirectory;
@@ -19,12 +21,8 @@ import java.nio.channels.FileChannel;
  */
 public final class ImageBuilder {
     
-    public static ImageBuilder of(File rootDir) throws IOException {
-        if (!rootDir.isDirectory()) {
-            throw new IOException("root must be a directory");
-        }
-        
-        return new ImageBuilder(rootDir);
+    public static ImageBuilder of(File[] files) throws IOException {
+        return new ImageBuilder(files);
     }
 
     private void copyContents(File f, FatFile file)
@@ -53,35 +51,59 @@ public final class ImageBuilder {
             raf.close();
         }
     }
-    
-    private final File imageRoot;
+
+    private final File[] files;
     private final ByteBuffer buffer;
-    
-    private ImageBuilder(File imageRoot) {
-        this.imageRoot = imageRoot;
+
+    private ImageBuilder(File[] files) {
+        this.files = files;
         this.buffer = ByteBuffer.allocate(1024 * 1024);
     }
-    
-    public void createDiskImage(File outFile) throws IOException {
-        final FileDisk fd = FileDisk.create(outFile, 8l * 1024 * 1024 * 1024);
+
+    public void createDiskImage(File outFile, long size) throws IOException {
+        FileDisk fd = FileDisk.create(outFile, size);
         final FatFileSystem fs = SuperFloppyFormatter
-                .get(fd).setFatType(FatType.FAT32).setVolumeLabel("huhu").format();
-        
+                .get(fd).setFatType(FatType.FAT32).setVolumeLabel("X16 Android").format();
+
+        final int FIRST_SECTOR = 512;
+
+        byte[] mbr = new byte[FIRST_SECTOR];
+        mbr[0x1c2] = 0x0c; // Partition type: FAT32 with LBA
+        mbr[0x1c6] = 0x01; // LBA of first absolute sector
+
         try {
-            this.copyRec(this.imageRoot, fs.getRoot());
+            this.copyRec(this.files, fs.getRoot());
         } finally {
             fs.close();
             fd.close();
         }
+
+        // I don't know why we have to do this song and dance
+        // but it can't be done in try before closing file.
+        fd = new FileDisk(outFile, false);
+        ByteBuffer buffer = ByteBuffer.allocate((int)size);
+        fd.read(0, buffer);
+        buffer.rewind();
+        fd.write(FIRST_SECTOR, buffer);
+
+        ByteBuffer buffer2 = ByteBuffer.wrap(mbr);
+        fd.write(0, buffer2);
+
+        fd.close();
     }
+
+//    public void addToDisk() throws IOException {
+//        FileDisk fd = new FileDisk(imageRoot, false);
+//        FatFileSystem fs = new FatFileSystem(fd, false);
+//        this.copyRec(this.imageRoot, fs.getRoot());
+//    }
     
-    private void copyRec(File src,  FatLfnDirectory dst) throws IOException {
-        for (File f : src.listFiles()) {
-            System.out.println("-> " + f);
-            
+    private void copyRec(File[] files, FatLfnDirectory dst) throws IOException {
+        for (File f : files) {
             if (f.isDirectory()) {
-                final FatLfnDirectoryEntry de = dst.addDirectory(f.getName());
-                copyRec(f, de.getDirectory());
+                Log.e("tough", "not implemented");
+                //final FatLfnDirectoryEntry de = dst.addDirectory(f.getName());
+                //copyRec(f, de.getDirectory());
             } else if (f.isFile()) {
                 final FatLfnDirectoryEntry de = dst.addFile(f.getName());
                 final FatFile file = de.getFile();
@@ -89,12 +111,6 @@ public final class ImageBuilder {
             }
             
         }
-    }
-    
-    public static void main(String[] args) throws IOException {
-        ImageBuilder
-                .of(new File("/home/trem/Downloads/"))
-                .createDiskImage(new File("/mnt/archiv/trem/dl.img"));
     }
     
 }

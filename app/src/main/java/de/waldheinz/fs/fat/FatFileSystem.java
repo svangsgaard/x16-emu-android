@@ -47,7 +47,7 @@ public final class FatFileSystem extends AbstractFileSystem {
     private final FatType fatType;
     private final long filesOffset;
 
-    FatFileSystem(BlockDevice api, boolean readOnly) throws IOException {
+    public FatFileSystem(BlockDevice api, boolean readOnly) throws IOException {
 
         this(api, readOnly, false);
     }

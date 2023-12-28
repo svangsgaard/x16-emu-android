@@ -65,11 +65,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
+import de.waldheinz.fs.fat.FatFile;
 import de.waldheinz.fs.fat.FatFileSystem;
+import de.waldheinz.fs.fat.FatLfnDirectoryEntry;
 import de.waldheinz.fs.fat.FatType;
 import de.waldheinz.fs.fat.SuperFloppyFormatter;
 import de.waldheinz.fs.util.FileDisk;
+import de.waldheinz.fs.util.ImageBuilder;
+import de.waldheinz.fs.util.RamDisk;
 
 /**
  SDL Activity
@@ -102,8 +107,9 @@ public class SDLActivity extends Activity {
     protected static AudioTrack mAudioTrack;
 
     public static boolean haveCopiedAssets() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SDLActivity.getContext());
-        return prefs.getBoolean("assetsCopied", false);
+        return false; // todo tmp
+        //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SDLActivity.getContext());
+        //return prefs.getBoolean("assetsCopied", false);
     }
 
     public static void setCopiedAssets() {
@@ -183,30 +189,59 @@ public class SDLActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        File outFile = new File(getFilesDir() + "/sd.img");
-        long outSize = 66601 * 512;
-
-        final int FIRST_SECTOR = 512;
-
-        byte[] mbr = new byte[FIRST_SECTOR];
-        mbr[0x1c2] = 0x0c; // Partition type: FAT32 with LBA
-        mbr[0x1c6] = 0x01; // LBA of first absolute sector
-
         try {
-            FileDisk fileDisk = FileDisk.create(outFile, outSize);
-            FatFileSystem fs = SuperFloppyFormatter
-              .get(fileDisk).setFatType(FatType.FAT32).setVolumeLabel("X16 Android").format();
-            //fs.getRoot().addDirectory("testDir");
+            File outFile = new File(getFilesDir() + "/sd.img");
+            File mbrFile = new File(getFilesDir() + "/sd-mbr.img");
+            if (true || !outFile.exists()) {
 
-            ByteBuffer buffer = ByteBuffer.allocate((int)fileDisk.getSize());
-            fileDisk.read(0, buffer);
-            buffer.rewind();
-            fileDisk.write(FIRST_SECTOR, buffer);
+                outFile.delete();
 
-            ByteBuffer buffer2 = ByteBuffer.wrap(mbr);
-            fileDisk.write(0, buffer2);
+                long outSize = 66601 * 512;
+
+                //FileDisk fileDisk = FileDisk.create(outFile, outSize);
+                //FileDisk fileDiskMbr = FileDisk.create(mbrFile, outSize + 512);
+                //FatFileSystem fs = SuperFloppyFormatter
+//                  .get(fileDisk).setFatType(FatType.FAT32).setVolumeLabel("X16 Android").format();
+                //fs.getRoot().addDirectory("testDir");
+
+                Log.d("myFiles", Arrays.toString(Objects.requireNonNull(new File(getFilesDir().toURI()).list())));
+
+                File[] filesToPack = {
+                  new File(getFilesDir() + "/XIXIT.PRG"),
+                  new File(getFilesDir() + "/LEV1.BIN"),
+                  new File(getFilesDir() + "/LEV2.BIN"),
+                  new File(getFilesDir() + "/LEV3.BIN"),
+                  new File(getFilesDir() + "/LEV4.BIN"),
+                  new File(getFilesDir() + "/SEV1.BIN"),
+                  new File(getFilesDir() + "/SEV2.BIN"),
+                  new File(getFilesDir() + "/SEV3.BIN"),
+                  new File(getFilesDir() + "/SEV4.BIN"),
+                  new File(getFilesDir() + "/SEV5.BIN"),
+                  new File(getFilesDir() + "/SEV6.BIN"),
+                  new File(getFilesDir() + "/SEV7.BIN"),
+                  new File(getFilesDir() + "/SEV8.BIN"),
+                  new File(getFilesDir() + "/MUSIC.BIN"),
+                  new File(getFilesDir() + "/SHAPES.BIN"),
+                  new File(getFilesDir() + "/SOUNDS.BIN"),
+                };
+                ImageBuilder.of(filesToPack).createDiskImage(outFile, outSize);
+
+//                ByteBuffer buffer = ByteBuffer.allocate((int) fileDisk.getSize());
+//                fileDisk.read(0, buffer);
+//                buffer.rewind();
+//                fileDisk.write(FIRST_SECTOR, buffer);
+//
+//                ByteBuffer buffer2 = ByteBuffer.wrap(mbr);
+//                fileDiskMbr.write(0, buffer2);
+//
+//                fs.close();
+//                fileDisk.close();
+            } else {
+//                File inFile = new File("XIXIT/");
+//                ImageBuilder.of(inFile).addToDisk();
+            }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+          throw new RuntimeException(e);
         }
 
 

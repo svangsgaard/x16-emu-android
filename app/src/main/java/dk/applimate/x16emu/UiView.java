@@ -47,7 +47,13 @@ public class UiView extends RelativeLayout {
     keyboardView.setOnKeyboardActionListener(new KeyboardView.OnKeyboardActionListener() {
       @Override
       public void onPress(int primaryCode) {
+        if (primaryCode == KeyEvent.KEYCODE_APOSTROPHE) {
+          SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT);
+        }
         SDLActivity.onNativeKeyDown(primaryCode);
+        if (primaryCode == KeyEvent.KEYCODE_APOSTROPHE) {
+          SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT);
+        }
       }
 
       @Override
