@@ -18,3 +18,5 @@ SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER
 - Update `CMakeLists.txt` until it works.
 - Update app/src/main/assets/rom.bin with matching version.
 - For weak devices, patch `void step6502()` with `clockticks6502 += 127; // Half a scanline`
+
+Uses https://github.com/chuckb/fat32-lib/

@@ -59,11 +59,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import de.waldheinz.fs.fat.FatFileSystem;
+import de.waldheinz.fs.fat.FatType;
+import de.waldheinz.fs.fat.SuperFloppyFormatter;
+import de.waldheinz.fs.util.FileDisk;
 
 /**
  SDL Activity
@@ -94,7 +100,6 @@ public class SDLActivity extends Activity {
 
     // Audio
     protected static AudioTrack mAudioTrack;
-    protected static AudioRecord mAudioRecord;
 
     public static boolean haveCopiedAssets() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SDLActivity.getContext());
@@ -149,8 +154,10 @@ public class SDLActivity extends Activity {
           "-noemucmdkeys", // No Ctrl+R etc. - might remove this later
           "-joy1", // Untested if controller works
           "-nohostieee", // IEEE seems important for host FS but costs CPU!
-          "-sdcard", "sdcard.img",
-          "-rom", "rom.bin"
+          "-sdcard", "sd.img",
+          "-rom", "rom.bin",
+          "-nvram", "nvram.bin",
+          "-ram", "2048"
         };
         return args;
     }
@@ -165,7 +172,6 @@ public class SDLActivity extends Activity {
         mJoystickHandler = null;
         mSDLThread = null;
         mAudioTrack = null;
-        mAudioRecord = null;
         mExitCalledFromJava = false;
         mBrokenLibraries = false;
         mIsPaused = false;
@@ -176,6 +182,33 @@ public class SDLActivity extends Activity {
     // Setup
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        File outFile = new File(getFilesDir() + "/sd.img");
+        long outSize = 66601 * 512;
+
+        final int FIRST_SECTOR = 512;
+
+        byte[] mbr = new byte[FIRST_SECTOR];
+        mbr[0x1c2] = 0x0c; // Partition type: FAT32 with LBA
+        mbr[0x1c6] = 0x01; // LBA of first absolute sector
+
+        try {
+            FileDisk fileDisk = FileDisk.create(outFile, outSize);
+            FatFileSystem fs = SuperFloppyFormatter
+              .get(fileDisk).setFatType(FatType.FAT32).setVolumeLabel("X16 Android").format();
+            //fs.getRoot().addDirectory("testDir");
+
+            ByteBuffer buffer = ByteBuffer.allocate((int)fileDisk.getSize());
+            fileDisk.read(0, buffer);
+            buffer.rewind();
+            fileDisk.write(FIRST_SECTOR, buffer);
+
+            ByteBuffer buffer2 = ByteBuffer.wrap(mbr);
+            fileDisk.write(0, buffer2);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
 
         Log.v(TAG, "Device: " + android.os.Build.DEVICE);
         Log.v(TAG, "Model: " + android.os.Build.MODEL);
@@ -687,55 +720,6 @@ public class SDLActivity extends Activity {
         }
     }
 
-    /**
-     * This method is called by SDL using JNI.
-     */
-    public static int captureOpen(int sampleRate, boolean is16Bit, boolean isStereo, int desiredFrames) {
-        int channelConfig = isStereo ? AudioFormat.CHANNEL_CONFIGURATION_STEREO : AudioFormat.CHANNEL_CONFIGURATION_MONO;
-        int audioFormat = is16Bit ? AudioFormat.ENCODING_PCM_16BIT : AudioFormat.ENCODING_PCM_8BIT;
-        int frameSize = (isStereo ? 2 : 1) * (is16Bit ? 2 : 1);
-
-        Log.v(TAG, "SDL capture: wanted " + (isStereo ? "stereo" : "mono") + " " + (is16Bit ? "16-bit" : "8-bit") + " " + (sampleRate / 1000f) + "kHz, " + desiredFrames + " frames buffer");
-
-        // Let the user pick a larger buffer if they really want -- but ye
-        // gods they probably shouldn't, the minimums are horrifyingly high
-        // latency already
-        desiredFrames = Math.max(desiredFrames, (AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) + frameSize - 1) / frameSize);
-
-        if (mAudioRecord == null) {
-            mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate,
-                    channelConfig, audioFormat, desiredFrames * frameSize);
-
-            // see notes about AudioTrack state in audioOpen(), above. Probably also applies here.
-            if (mAudioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "Failed during initialization of AudioRecord");
-                mAudioRecord.release();
-                mAudioRecord = null;
-                return -1;
-            }
-
-            mAudioRecord.startRecording();
-        }
-
-        Log.v(TAG, "SDL capture: got " + ((mAudioRecord.getChannelCount() >= 2) ? "stereo" : "mono") + " " + ((mAudioRecord.getAudioFormat() == AudioFormat.ENCODING_PCM_16BIT) ? "16-bit" : "8-bit") + " " + (mAudioRecord.getSampleRate() / 1000f) + "kHz, " + desiredFrames + " frames buffer");
-
-        return 0;
-    }
-
-    /** This method is called by SDL using JNI. */
-    public static int captureReadShortBuffer(short[] buffer, boolean blocking) {
-        // !!! FIXME: this is available in API Level 23. Until then, we always block.  :(
-        //return mAudioRecord.read(buffer, 0, buffer.length, blocking ? AudioRecord.READ_BLOCKING : AudioRecord.READ_NON_BLOCKING);
-        return mAudioRecord.read(buffer, 0, buffer.length);
-    }
-
-    /** This method is called by SDL using JNI. */
-    public static int captureReadByteBuffer(byte[] buffer, boolean blocking) {
-        // !!! FIXME: this is available in API Level 23. Until then, we always block.  :(
-        //return mAudioRecord.read(buffer, 0, buffer.length, blocking ? AudioRecord.READ_BLOCKING : AudioRecord.READ_NON_BLOCKING);
-        return mAudioRecord.read(buffer, 0, buffer.length);
-    }
-
 
     /** This method is called by SDL using JNI. */
     public static void audioClose() {
@@ -743,15 +727,6 @@ public class SDLActivity extends Activity {
             mAudioTrack.stop();
             mAudioTrack.release();
             mAudioTrack = null;
-        }
-    }
-
-    /** This method is called by SDL using JNI. */
-    public static void captureClose() {
-        if (mAudioRecord != null) {
-            mAudioRecord.stop();
-            mAudioRecord.release();
-            mAudioRecord = null;
         }
     }
 

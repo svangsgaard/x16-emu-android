@@ -107,18 +107,6 @@ ANDROIDAUDIO_GetDeviceBuf(_THIS)
     return Android_JNI_GetAudioBuffer();
 }
 
-static int
-ANDROIDAUDIO_CaptureFromDevice(_THIS, void *buffer, int buflen)
-{
-    return Android_JNI_CaptureAudioBuffer(buffer, buflen);
-}
-
-static void
-ANDROIDAUDIO_FlushCapture(_THIS)
-{
-    Android_JNI_FlushCapturedAudio();
-}
-
 static void
 ANDROIDAUDIO_CloseDevice(_THIS)
 {
@@ -144,8 +132,6 @@ ANDROIDAUDIO_Init(SDL_AudioDriverImpl * impl)
     impl->PlayDevice = ANDROIDAUDIO_PlayDevice;
     impl->GetDeviceBuf = ANDROIDAUDIO_GetDeviceBuf;
     impl->CloseDevice = ANDROIDAUDIO_CloseDevice;
-    impl->CaptureFromDevice = ANDROIDAUDIO_CaptureFromDevice;
-    impl->FlushCapture = ANDROIDAUDIO_FlushCapture;
 
     /* and the capabilities */
     impl->HasCaptureSupport = SDL_TRUE;
