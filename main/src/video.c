@@ -1454,7 +1454,25 @@ video_update()
     if (textProperties.text_mode) {
         textProperties.color_depth;
         uint8_t tileBytes[512]; // One row of 256, 2 bytes per tile
-        video_space_read(tileBytes, textAddr, textSize);
+        int textAddr = textProperties.map_base;
+        int tileAddr = textProperties.tile_base;
+        video_space_read_range(tileBytes, textAddr, 512);
+
+        for (int tile = 0; tile < 512; tile += 2) {
+            uint8_t fg;
+            uint8_t bg;
+            if (textProperties.text_mode_256c) {
+                fg = tileBytes[tile];
+                bg = 0;
+            } else {
+                fg = tileBytes[tile] & 15;
+                bg = tileBytes[tile] >> 4;
+            }
+
+            // copy to framebuffer
+
+        }
+
         // todo render_layer_line_text(uint8_t layer, uint16_t y)
     }
 
