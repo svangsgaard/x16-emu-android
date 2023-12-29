@@ -1430,7 +1430,7 @@ emulator_loop(void *param)
 #endif
 		}
 
-		// The optimization from the opportunistic batching of audio rendering 
+		// The optimization from the opportunistic batching of audio rendering
 		// is lost if we need to track the YM2151 IRQ, so it has been made a
 		// command-line switch that's disabled by default.
 		if (ym2151_irq_support) {

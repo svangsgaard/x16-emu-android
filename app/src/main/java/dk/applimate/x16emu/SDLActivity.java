@@ -153,7 +153,7 @@ public class SDLActivity extends Activity {
      */
     protected String[] getArguments() {
         String[] args = {
-          "-mhz", "2", // < 8 useful for weak devices
+          "-mhz", "4", // < 8 useful for weak devices
           "-quality", "linear", // Nearest might be good in landscape mode
           "-abufs", "24", // Reduces audio buffer underruns
           "-rtc", // Real-time clock
@@ -247,8 +247,8 @@ public class SDLActivity extends Activity {
         }
 
 
-        Log.v(TAG, "Device: " + android.os.Build.DEVICE);
-        Log.v(TAG, "Model: " + android.os.Build.MODEL);
+        Log.v(TAG, "Device: " + Build.DEVICE);
+        Log.v(TAG, "Model: " + Build.MODEL);
         Log.v(TAG, "onCreate(): " + mSingleton);
         super.onCreate(savedInstanceState);
 
@@ -320,6 +320,7 @@ public class SDLActivity extends Activity {
                 SDLActivity.onNativeDropFile(filename);
             }
         }
+
     }
 
     // Events

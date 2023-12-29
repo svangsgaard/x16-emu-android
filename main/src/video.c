@@ -1104,7 +1104,7 @@ render_line(uint16_t y, float scan_pos_x)
 
 
 	if (sprite_line_enable) {
-		render_sprite_line(eff_y);
+		//render_sprite_line(eff_y);
 	}
 
 	if (warp_mode && (frame_count & 63)) {
@@ -1117,7 +1117,7 @@ render_line(uint16_t y, float scan_pos_x)
 		if (prev_layer_properties[1][0].text_mode) {
 			render_layer_line_text(0, eff_y);
 		} else if (prev_layer_properties[1][0].bitmap_mode) {
-			render_layer_line_bitmap(0, eff_y);
+			//render_layer_line_bitmap(0, eff_y);
 		} else {
 			render_layer_line_tile(0, eff_y);
 		}
@@ -1336,6 +1336,128 @@ video_update()
 			framebuffer[(y * SCREEN_WIDTH + x) * 4 + 3] = 0x00;
 		}
 	}
+
+    float hscale = 128 / reg_composer[1];
+    float vscale = 128 / reg_composer[1] / 2;
+    for (int i = NUM_SPRITES - 1; i >= 0; i--) {
+        struct video_sprite_properties sp = sprite_properties[i];
+        if (sp.sprite_zdepth == 0) continue; // todo better z-depth
+        int bufferOffset = (sp.sprite_y * SCREEN_WIDTH * vscale + sp.sprite_x * hscale) * 4;
+        int vramAddr = sp.sprite_address;
+
+        uint8_t bit4Mask = 0b11110000;
+        // todo handle flips
+        for (int y = 0; y < sp.sprite_height; y++) {
+            for (int x = 0; x < sp.sprite_width; x++) {
+                uint8_t vramByte;
+                if (sp.color_mode == 1) { // 8bpp
+                    vramByte = video_ram[vramAddr];
+                } else { // 4bpp
+                    vramByte = video_ram[vramAddr] & bit4Mask;
+                    if (bit4Mask & 0b11110000) vramByte >>= 4;
+                }
+                if (vramByte != 0 && sp.sprite_x + x < 320) { // Skip if alpha
+                    // ^ todo ends early at edge of screen even with <=
+                    vramByte += sp.palette_offset;
+                    uint16_t entry = palette[vramByte * 2] | palette[vramByte * 2 + 1] << 8;
+                    uint8_t r = ((entry >> 8) & 0xf) << 4 | ((entry >> 8) & 0xf);
+                    uint8_t g = ((entry >> 4) & 0xf) << 4 | ((entry >> 4) & 0xf);
+                    uint8_t b = (entry & 0xf) << 4 | (entry & 0xf);
+
+                    framebuffer[bufferOffset + (y * SCREEN_WIDTH * 4) + x * 4] = b; // b
+                    framebuffer[bufferOffset + (y * SCREEN_WIDTH * 4) + x * 4 + 1] = g; // g
+                    framebuffer[bufferOffset + (y * SCREEN_WIDTH * 4) + x * 4 + 2] = r; // r
+                }
+
+                if (sp.color_mode == 1) { // 8bpp
+                    vramAddr++;
+                } else { // 4bpp
+                    bit4Mask = ~bit4Mask;
+                    if (bit4Mask & 0b11110000) vramAddr++;
+                }
+            }
+        }
+    }
+
+    // todo non-4bpp depths
+    struct video_layer_properties bitmapProperties0 = layer_properties[0];
+    if (bitmapProperties0.bitmap_mode) {
+        uint8_t bit4Mask = 0b11110000;
+        int pixelAddr = bitmapProperties0.tile_base;
+        uint8_t paletteOffset = reg_layer[0][4] & 0xf;
+        for (int y = 0; y < SCREEN_HEIGHT; y++) {
+            for (int x = 0; x < SCREEN_WIDTH / 2; x++) {
+                uint8_t pixel = video_space_read(pixelAddr) & bit4Mask;
+
+                if (pixel != 0) {
+
+                    if (bit4Mask & 0b11110000) pixel = pixel >> 4;
+                    pixel += paletteOffset * 16;
+                    uint16_t entry =
+                            palette[pixel * 2] | palette[pixel * 2 + 1] << 8;
+                    uint8_t r =
+                            ((entry >> 8) & 0xf) << 4 | ((entry >> 8) & 0xf);
+                    uint8_t g =
+                            ((entry >> 4) & 0xf) << 4 | ((entry >> 4) & 0xf);
+                    uint8_t b = (entry & 0xf) << 4 | (entry & 0xf);
+
+                    framebuffer[(y * SCREEN_WIDTH * 4) + x * 4] = b;
+                    framebuffer[(y * SCREEN_WIDTH * 4) + x * 4 + 1] = g;
+                    framebuffer[(y * SCREEN_WIDTH * 4) + x * 4 + 2] = r;
+
+                }
+
+                bit4Mask = ~bit4Mask;
+                if (bit4Mask & 0b11110000) {
+                    pixelAddr++;
+                }
+            }
+        }
+    }
+
+    struct video_layer_properties bitmapProperties = layer_properties[1];
+    if (bitmapProperties.bitmap_mode) {
+        uint8_t bit4Mask = 0b11110000;
+        int pixelAddr = bitmapProperties.tile_base;
+        uint8_t paletteOffset = reg_layer[1][4] & 0xf;
+        for (int y = 0; y < SCREEN_HEIGHT; y++) {
+            for (int x = 0; x < SCREEN_WIDTH / 2; x++) {
+                uint8_t pixel = video_space_read(pixelAddr) & bit4Mask;
+
+                if (pixel != 0) {
+
+                    if (bit4Mask & 0b11110000) pixel = pixel >> 4;
+                    pixel += paletteOffset * 16;
+                    uint16_t entry =
+                            palette[pixel * 2] | palette[pixel * 2 + 1] << 8;
+                    uint8_t r =
+                            ((entry >> 8) & 0xf) << 4 | ((entry >> 8) & 0xf);
+                    uint8_t g =
+                            ((entry >> 4) & 0xf) << 4 | ((entry >> 4) & 0xf);
+                    uint8_t b = (entry & 0xf) << 4 | (entry & 0xf);
+
+                    framebuffer[(y * SCREEN_WIDTH * 4) + x * 4] = b;
+                    framebuffer[(y * SCREEN_WIDTH * 4) + x * 4 + 1] = g;
+                    framebuffer[(y * SCREEN_WIDTH * 4) + x * 4 + 2] = r;
+
+                }
+
+                bit4Mask = ~bit4Mask;
+                if (bit4Mask & 0b11110000) {
+                    pixelAddr++;
+                }
+            }
+        }
+    }
+
+    struct video_layer_properties textProperties = layer_properties[1];
+    if (textProperties.text_mode) {
+        textProperties.color_depth;
+        uint8_t tileBytes[512]; // One row of 256, 2 bytes per tile
+        video_space_read(tileBytes, textAddr, textSize);
+        // todo render_layer_line_text(uint8_t layer, uint16_t y)
+    }
+
 
 	SDL_UpdateTexture(sdlTexture, NULL, framebuffer, SCREEN_WIDTH * 4);
 
