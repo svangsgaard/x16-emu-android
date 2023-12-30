@@ -76,6 +76,8 @@ import de.waldheinz.fs.util.FileDisk;
 import de.waldheinz.fs.util.ImageBuilder;
 import de.waldheinz.fs.util.RamDisk;
 
+// todo replace SDL with new version - this is all very old
+
 /**
  SDL Activity
  */
@@ -153,7 +155,7 @@ public class SDLActivity extends Activity {
      */
     protected String[] getArguments() {
         String[] args = {
-          "-mhz", "4", // < 8 useful for weak devices
+          "-mhz", "2", // < 8 useful for weak devices
           "-quality", "linear", // Nearest might be good in landscape mode
           "-abufs", "24", // Reduces audio buffer underruns
           "-rtc", // Real-time clock
@@ -188,6 +190,8 @@ public class SDLActivity extends Activity {
     // Setup
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        getWindow().setFormat(PixelFormat.RGB_888);
 
         try {
             File outFile = new File(getFilesDir() + "/sd.img");
@@ -294,6 +298,7 @@ public class SDLActivity extends Activity {
 
         // Set up the surface
         mSurface = new SDLSurface(getApplication());
+        mSurface.getHolder().setFormat(PixelFormat.RGB_888);
 
         WindowManager windowManager = (WindowManager) getContext()
           .getSystemService(Context.WINDOW_SERVICE);
@@ -1233,7 +1238,7 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
     @Override
     public void surfaceChanged(SurfaceHolder holder,
                                int format, int width, int height) {
-        Log.v("SDL", "surfaceChanged()");
+        Log.v("SDL", "surfaceChanged(), format " + format);
 
         int sdlFormat = 0x15151002; // SDL_PIXELFORMAT_RGB565 by default
         switch (format) {

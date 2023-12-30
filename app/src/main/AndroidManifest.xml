@@ -4,6 +4,9 @@
     android:versionCode="1"
     android:versionName="1.0">
 
+    <!-- RGB888 https://stackoverflow.com/a/28430402 -->
+    <supports-screens android:smallScreens="true" android:normalScreens="true" android:largeScreens="true" android:xlargeScreens="true" android:anyDensity="true" />
+
     <uses-feature
         android:name="android.software.leanback"
         android:required="false" />

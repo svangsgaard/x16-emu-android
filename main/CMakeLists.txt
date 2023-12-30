@@ -8,11 +8,10 @@ include_directories(
     # SDL_internal.h is located in src required by SDL_android_main.c bridge
     ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/src
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/include
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx/ ${CMAKE_CURRENT_SOURCE_DIR}/../SDL2_gfx)
+
 
 SET(CMAKE_C_FLAGS "-Ofast -DWITH_YM2151 -Isrc/extern/include")
 SET(CMAKE_CXX_FLAGS "-Ofast -DWITH_YM2151 -Isrc/extern/ymfm/src")
@@ -65,5 +64,5 @@ add_library(
 target_link_libraries(
     main-lib
     SDL2
-    SDL2_gfx
+
 )

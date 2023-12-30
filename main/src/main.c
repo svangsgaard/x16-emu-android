@@ -1265,7 +1265,7 @@ emscripten_main_loop(void) {
 	emulator_loop(NULL);
 }
 
-
+int clocksSinceLastFrame = 0;
 void *
 emulator_loop(void *param)
 {
@@ -1386,6 +1386,7 @@ emulator_loop(void *param)
 		uint32_t clocks = clockticks6502 - old_clockticks6502;
 		old_clockticks6502 = clockticks6502;
 		bool new_frame = false;
+        clocksSinceLastFrame += clocks;
 		via1_step(clocks);
 		vera_spi_step(clocks);
 		if (has_serial) {
@@ -1394,9 +1395,10 @@ emulator_loop(void *param)
 		if (has_via2) {
 			via2_step(clocks);
 		}
-		if (!headless) {
-			new_frame |= video_step(MHZ, clocks, false);
-		}
+		if (clocksSinceLastFrame > (MHZ * 1000000) / 60) {
+            new_frame = true;
+            clocksSinceLastFrame -= clocksSinceLastFrame;
+        }
 
 		for (uint32_t i = 0; i < clocks; i++) {
 			i2c_step();
